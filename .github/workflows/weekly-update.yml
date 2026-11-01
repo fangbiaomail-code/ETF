@@ -1,5 +1,12 @@
 name: Weekly ETF data update
 on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "scripts/**"
+      - "requirements.txt"
+      - ".github/workflows/weekly-update.yml"
   schedule:
     - cron: "30 8 * * 5"
   workflow_dispatch:
@@ -20,7 +27,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Update public data
+      - name: Update public valuation data
         run: python scripts/update_data.py
       - name: Commit updated data
         run: |
@@ -38,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: \${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
