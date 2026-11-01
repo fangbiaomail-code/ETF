@@ -1,8 +1,59 @@
 {
-  "updatedAt": null,
-  "provider": "AKShare",
-  "notice": "首次 GitHub Actions 运行后更新；无可靠估值来源时保持空值。",
-  "assets": {},
+  "updatedAt": "2026-11-01 05:04 UTC",
+  "provider": "AKShare / FundDB public endpoints",
+  "notice": "估值数据仅在公开接口返回可核验历史序列时展示；价格行情不用于反推 PE。",
+  "assets": {
+    "sp500": {
+      "name": "标普500",
+      "pe": null,
+      "pe_pct": null,
+      "dividend_yield": null,
+      "dividend_pct": null,
+      "date": null,
+      "historyStart": null,
+      "status": "unavailable"
+    },
+    "nasdaq": {
+      "name": "纳斯达克100",
+      "pe": null,
+      "pe_pct": null,
+      "dividend_yield": null,
+      "dividend_pct": null,
+      "date": null,
+      "historyStart": null,
+      "status": "unavailable"
+    },
+    "dividend": {
+      "name": "中证红利低波 H30269",
+      "pe": null,
+      "pe_pct": null,
+      "dividend_yield": null,
+      "dividend_pct": null,
+      "date": null,
+      "historyStart": null,
+      "status": "unavailable"
+    },
+    "consumer": {
+      "name": "中证主要消费 000932",
+      "pe": null,
+      "pe_pct": null,
+      "dividend_yield": null,
+      "dividend_pct": null,
+      "date": null,
+      "historyStart": null,
+      "status": "unavailable"
+    },
+    "star50": {
+      "name": "科创50 000688",
+      "pe": null,
+      "pe_pct": null,
+      "dividend_yield": null,
+      "dividend_pct": null,
+      "date": null,
+      "historyStart": null,
+      "status": "unavailable"
+    }
+  },
   "history": [],
   "priceHistory": []
 }
