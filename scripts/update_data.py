@@ -35,7 +35,13 @@ def get_json(url):
 
 def number(value):
     try:
-        result = float(str(value).replace(",", "").replace("%", "").strip())
+        if value is None:
+            return None
+        cleaned = str(value).replace(",", "").replace("%", "").strip()
+        match = __import__("re").search(r"-?\\d+(?:\\.\\d+)?", cleaned)
+        if not match:
+            return None
+        result = float(match.group(0))
         return result if pd.notna(result) else None
     except Exception:
         return None
@@ -306,13 +312,13 @@ def main():
                         new_rows, source, frequency = hom_sp500_rows()
                 elif key == "sp500":
                     try:
-                        new_rows, source, frequency = hom_sp500_rows()
+                        new_rows, source, frequency = multpl_sp500_rows()
                     except Exception as exc:
-                        print(f"History of Market S&P fallback failed: {exc}")
+                        print(f"Multpl S&P history failed: {exc}")
                         try:
-                            new_rows, source, frequency = multpl_sp500_rows()
+                            new_rows, source, frequency = hom_sp500_rows()
                         except Exception as exc2:
-                            print(f"Multpl S&P fallback failed: {exc2}")
+                            print(f"History of Market S&P fallback failed: {exc2}")
                             new_rows, source, frequency = dqydj_sp500_rows()
                 else:
                     raise RuntimeError("免费数据目录暂未提供纳斯达克100可核验的 TTM PE 历史序列")
