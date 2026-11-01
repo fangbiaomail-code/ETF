@@ -38,7 +38,7 @@ def number(value):
         if value is None:
             return None
         cleaned = str(value).replace(",", "").replace("%", "").strip()
-        match = __import__("re").search(r"-?\\d+(?:\\.\\d+)?", cleaned)
+        match = __import__("re").search(r"-?\d+(?:\.\d+)?", cleaned)
         if not match:
             return None
         result = float(match.group(0))
