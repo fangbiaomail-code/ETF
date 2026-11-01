@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-11-01 05:04 UTC",
-  "provider": "AKShare / FundDB public endpoints",
-  "notice": "估值数据仅在公开接口返回可核验历史序列时展示；价格行情不用于反推 PE。",
+  "updatedAt": "2026-11-01 05:14 UTC",
+  "provider": "AKShare + official CSI + public index valuation datasets",
+  "notice": "PE 使用指数层面 TTM 口径；百分位按页面所列完整可用历史样本计算。缺少可核验估值时不以价格推算。",
   "assets": {
     "sp500": {
       "name": "标普500",
@@ -11,49 +11,519 @@
       "dividend_pct": null,
       "date": null,
       "historyStart": null,
-      "status": "unavailable"
-    },
-    "nasdaq": {
-      "name": "纳斯达克100",
-      "pe": null,
-      "pe_pct": null,
-      "dividend_yield": null,
-      "dividend_pct": null,
-      "date": null,
-      "historyStart": null,
-      "status": "unavailable"
+      "sampleCount": 0,
+      "source": null,
+      "frequency": null,
+      "status": "unavailable",
+      "error": "DQYDJ 页面没有返回可识别的 PE 历史表"
     },
     "dividend": {
       "name": "中证红利低波 H30269",
-      "pe": null,
-      "pe_pct": null,
+      "pe": 8.14,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.047400000000000005,
+      "dividend_pct": 0.05,
+      "date": "2026-10-30",
+      "historyStart": "2026-10-05",
+      "sampleCount": 20,
+      "source": "中证指数有限公司官方估值文件（AKShare 接口）",
+      "frequency": "日频",
+      "status": "ok"
+    },
+    "nasdaq": {
+      "name": "纳斯达克100",
+      "pe": 35.09,
+      "pe_pct": 0.8888888888888888,
       "dividend_yield": null,
       "dividend_pct": null,
-      "date": null,
-      "historyStart": null,
-      "status": "unavailable"
+      "date": "2026-09-30",
+      "historyStart": "2023-12-29",
+      "sampleCount": 9,
+      "source": "Siblis Research 免费历史估值接口（需注明来源；月末历史样本）",
+      "frequency": "月末",
+      "status": "ok"
     },
     "consumer": {
       "name": "中证主要消费 000932",
-      "pe": null,
-      "pe_pct": null,
+      "pe": 17.65,
+      "pe_pct": 1.0,
       "dividend_yield": null,
       "dividend_pct": null,
-      "date": null,
-      "historyStart": null,
-      "status": "unavailable"
+      "date": "2026-10-30",
+      "historyStart": "2026-10-05",
+      "sampleCount": 20,
+      "source": "中证指数有限公司官方估值文件（AKShare 接口）",
+      "frequency": "日频",
+      "status": "ok"
     },
     "star50": {
       "name": "科创50 000688",
-      "pe": null,
-      "pe_pct": null,
+      "pe": 77.34,
+      "pe_pct": 0.05,
       "dividend_yield": null,
       "dividend_pct": null,
-      "date": null,
-      "historyStart": null,
-      "status": "unavailable"
+      "date": "2026-10-30",
+      "historyStart": "2026-10-05",
+      "sampleCount": 20,
+      "source": "中证指数有限公司官方估值文件（AKShare 接口）",
+      "frequency": "日频",
+      "status": "ok"
     }
   },
-  "history": [],
-  "priceHistory": []
+  "history": [
+    {
+      "key": "dividend",
+      "date": "2026-10-05",
+      "pe": 7.85,
+      "pe_pct": null,
+      "dividend_yield": 0.050300000000000004,
+      "dividend_pct": null
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-06",
+      "pe": 7.85,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.050300000000000004,
+      "dividend_pct": 1.0
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-07",
+      "pe": 7.85,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.050300000000000004,
+      "dividend_pct": 1.0
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-08",
+      "pe": 7.94,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.049800000000000004,
+      "dividend_pct": 0.25
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-09",
+      "pe": 7.92,
+      "pe_pct": 0.8,
+      "dividend_yield": 0.0499,
+      "dividend_pct": 0.4
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-12",
+      "pe": 8.07,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.049,
+      "dividend_pct": 0.16666666666666666
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-13",
+      "pe": 8.03,
+      "pe_pct": 0.8571428571428571,
+      "dividend_yield": 0.0492,
+      "dividend_pct": 0.2857142857142857
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-14",
+      "pe": 8.08,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.0489,
+      "dividend_pct": 0.125
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-15",
+      "pe": 7.98,
+      "pe_pct": 0.6666666666666666,
+      "dividend_yield": 0.0495,
+      "dividend_pct": 0.4444444444444444
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-16",
+      "pe": 8.01,
+      "pe_pct": 0.7,
+      "dividend_yield": 0.0493,
+      "dividend_pct": 0.4
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-19",
+      "pe": 8.12,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.048600000000000004,
+      "dividend_pct": 0.09090909090909091
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-20",
+      "pe": 8.03,
+      "pe_pct": 0.75,
+      "dividend_yield": 0.0492,
+      "dividend_pct": 0.4166666666666667
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-21",
+      "pe": 7.94,
+      "pe_pct": 0.46153846153846156,
+      "dividend_yield": 0.049699999999999994,
+      "dividend_pct": 0.6153846153846154
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-22",
+      "pe": 7.87,
+      "pe_pct": 0.2857142857142857,
+      "dividend_yield": 0.050199999999999995,
+      "dividend_pct": 0.7857142857142857
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-23",
+      "pe": 7.84,
+      "pe_pct": 0.06666666666666667,
+      "dividend_yield": 0.0504,
+      "dividend_pct": 1.0
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-26",
+      "pe": 7.95,
+      "pe_pct": 0.5625,
+      "dividend_yield": 0.049699999999999994,
+      "dividend_pct": 0.5625
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-27",
+      "pe": 8.0,
+      "pe_pct": 0.6470588235294118,
+      "dividend_yield": 0.049400000000000006,
+      "dividend_pct": 0.4117647058823529
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-28",
+      "pe": 7.97,
+      "pe_pct": 0.5555555555555556,
+      "dividend_yield": 0.0496,
+      "dividend_pct": 0.5
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-29",
+      "pe": 8.09,
+      "pe_pct": 0.9473684210526315,
+      "dividend_yield": 0.048799999999999996,
+      "dividend_pct": 0.10526315789473684
+    },
+    {
+      "key": "dividend",
+      "date": "2026-10-30",
+      "pe": 8.14,
+      "pe_pct": 1.0,
+      "dividend_yield": 0.047400000000000005,
+      "dividend_pct": 0.05
+    },
+    {
+      "key": "nasdaq",
+      "date": "2023-12-29",
+      "pe": 30.25,
+      "pe_pct": null
+    },
+    {
+      "key": "nasdaq",
+      "date": "2024-06-28",
+      "pe": 31.82,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "nasdaq",
+      "date": "2024-12-31",
+      "pe": 32.36,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "nasdaq",
+      "date": "2025-03-31",
+      "pe": 28.73,
+      "pe_pct": 0.25
+    },
+    {
+      "key": "nasdaq",
+      "date": "2025-06-30",
+      "pe": 32.24,
+      "pe_pct": 0.8
+    },
+    {
+      "key": "nasdaq",
+      "date": "2025-09-30",
+      "pe": 32.98,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "nasdaq",
+      "date": "2025-12-31",
+      "pe": 32.32,
+      "pe_pct": 0.7142857142857143
+    },
+    {
+      "key": "nasdaq",
+      "date": "2026-06-30",
+      "pe": 35.24,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "nasdaq",
+      "date": "2026-09-30",
+      "pe": 35.09,
+      "pe_pct": 0.8888888888888888
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-05",
+      "pe": 17.09,
+      "pe_pct": null
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-06",
+      "pe": 17.09,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-07",
+      "pe": 17.09,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-08",
+      "pe": 17.03,
+      "pe_pct": 0.25
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-09",
+      "pe": 17.15,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-12",
+      "pe": 17.31,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-13",
+      "pe": 17.11,
+      "pe_pct": 0.7142857142857143
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-14",
+      "pe": 17.18,
+      "pe_pct": 0.875
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-15",
+      "pe": 17.13,
+      "pe_pct": 0.6666666666666666
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-16",
+      "pe": 17.36,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-19",
+      "pe": 17.34,
+      "pe_pct": 0.9090909090909091
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-20",
+      "pe": 17.28,
+      "pe_pct": 0.75
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-21",
+      "pe": 17.1,
+      "pe_pct": 0.38461538461538464
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-22",
+      "pe": 17.03,
+      "pe_pct": 0.14285714285714285
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-23",
+      "pe": 17.28,
+      "pe_pct": 0.8
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-26",
+      "pe": 17.46,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-27",
+      "pe": 17.32,
+      "pe_pct": 0.8235294117647058
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-28",
+      "pe": 17.06,
+      "pe_pct": 0.16666666666666666
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-29",
+      "pe": 17.27,
+      "pe_pct": 0.631578947368421
+    },
+    {
+      "key": "consumer",
+      "date": "2026-10-30",
+      "pe": 17.65,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-05",
+      "pe": 101.75,
+      "pe_pct": null
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-06",
+      "pe": 101.75,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-07",
+      "pe": 101.75,
+      "pe_pct": 1.0
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-08",
+      "pe": 97.06,
+      "pe_pct": 0.25
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-09",
+      "pe": 97.08,
+      "pe_pct": 0.4
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-12",
+      "pe": 95.29,
+      "pe_pct": 0.16666666666666666
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-13",
+      "pe": 95.43,
+      "pe_pct": 0.2857142857142857
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-14",
+      "pe": 92.24,
+      "pe_pct": 0.125
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-15",
+      "pe": 91.18,
+      "pe_pct": 0.1111111111111111
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-16",
+      "pe": 91.12,
+      "pe_pct": 0.1
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-19",
+      "pe": 88.77,
+      "pe_pct": 0.09090909090909091
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-20",
+      "pe": 89.53,
+      "pe_pct": 0.16666666666666666
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-21",
+      "pe": 89.58,
+      "pe_pct": 0.23076923076923078
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-22",
+      "pe": 87.01,
+      "pe_pct": 0.07142857142857142
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-23",
+      "pe": 89.63,
+      "pe_pct": 0.3333333333333333
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-26",
+      "pe": 87.56,
+      "pe_pct": 0.125
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-27",
+      "pe": 83.37,
+      "pe_pct": 0.058823529411764705
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-28",
+      "pe": 85.48,
+      "pe_pct": 0.1111111111111111
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-29",
+      "pe": 81.77,
+      "pe_pct": 0.05263157894736842
+    },
+    {
+      "key": "star50",
+      "date": "2026-10-30",
+      "pe": 77.34,
+      "pe_pct": 0.05
+    }
+  ]
 }
