@@ -327,18 +327,26 @@ def main():
             pe_pct = percentile([x["pe"] for x in pe_points], current_pe) if current_pe is not None else None
             dy_pct = percentile([x["dividend_yield"] for x in dy_points], current_dy) if current_dy is not None else None
 
-            # Build expanding historical percentile values only after sufficient observations.
-            pe_seen, dy_seen = [], []
-            for point in merged_history:
-                out = {"key": key, "date": point["date"], "pe": point.get("pe")}
-                if point.get("pe") is not None:
-                    pe_seen.append(point["pe"])
-                    out["pe_pct"] = percentile(pe_seen, point["pe"])
-                if key == "dividend" and point.get("dividend_yield") is not None:
+            # Keep daily observations for percentile calculations, but publish monthly PE
+            # chart points to keep the static JSON small and fast to load.
+            output_points = {}
+            month_last = {}
+            for point in pe_points:
+                month_last[point["date"][:7]] = point
+            for point in month_last.values():
+                pe_seen = [x["pe"] for x in pe_points if x["date"] <= point["date"]]
+                out = output_points.setdefault(point["date"], {"key": key, "date": point["date"]})
+                out["pe"] = point["pe"]
+                out["pe_pct"] = percentile(pe_seen, point["pe"])
+            # Keep the daily official dividend-yield snapshots as they accumulate.
+            if key == "dividend":
+                dy_seen = []
+                for point in dy_points:
                     dy_seen.append(point["dividend_yield"])
+                    out = output_points.setdefault(point["date"], {"key": key, "date": point["date"]})
                     out["dividend_yield"] = point["dividend_yield"]
                     out["dividend_pct"] = percentile(dy_seen, point["dividend_yield"])
-                payload["history"].append(out)
+            payload["history"].extend(output_points[k] for k in sorted(output_points))
 
             payload["assets"][key] = {
                 "name": cfg["name"],
