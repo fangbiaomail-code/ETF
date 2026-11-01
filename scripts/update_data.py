@@ -264,18 +264,18 @@ def load_old():
         return {}
 
 def merge_history(key, new_rows, old_history):
+    # Rebuild PE from the selected provider on every run. Do not blend old
+    # PE observations from a previous provider/methodology. Dividend-yield
+    # history is already merged into CSI rows inside csi_rows().
     merged = {}
-    for point in old_history:
-        if point.get("key") == key and point.get("date"):
-            merged[point["date"]] = dict(point)
     for point in new_rows:
         dt = point["date"]
-        old = merged.setdefault(dt, {"key": key, "date": dt})
-        old["key"] = key
-        old["date"] = dt
+        current = merged.setdefault(dt, {"key": key, "date": dt})
+        current["key"] = key
+        current["date"] = dt
         for field in ("pe", "dividend_yield"):
             if point.get(field) is not None:
-                old[field] = point[field]
+                current[field] = point[field]
     return [merged[k] for k in sorted(merged)]
 
 def main():
