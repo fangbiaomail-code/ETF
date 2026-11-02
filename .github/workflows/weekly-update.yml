@@ -15,7 +15,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: "pages"
+  group: "pages-etf-inception"
   cancel-in-progress: true
 jobs:
   update:
