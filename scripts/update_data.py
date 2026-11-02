@@ -352,7 +352,7 @@ def trendonify_nasdaq_rows():
             )}
             rows = []
             for line in text_body.splitlines():
-                match = re.search(r"\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\s+(20\\d{2}|19\\d{2})\\s*\\|\\s*([0-9]+(?:\\.[0-9]+)?)", line, re.I)
+                match = re.search(r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(20\d{2}|19\d{2})\s*\|\s*([0-9]+(?:\.[0-9]+)?)", line, re.I)
                 if not match:
                     continue
                 month = month_map[match.group(1).title()]
