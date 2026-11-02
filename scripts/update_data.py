@@ -17,7 +17,6 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "data.json"
-BASE_SIBLIS = "https://siblisresearch.supabase.co/functions/v1/free-data-api"
 TIMEOUT = 35
 MIN_PERCENTILE_SAMPLES = 30
 HEADERS = {"User-Agent": "ETF-Valuation-Watch/1.1 (personal research dashboard)"}
@@ -32,11 +31,6 @@ ASSETS = {
         "name": "中证红利低波 H30269", "kind": "csi", "code": "H30269",
         "launch_date": "2013-12-19", "inception_date": "2013-12-19",
         "base_date": "2005-12-30",
-    },
-    "nasdaq": {
-        "name": "纳斯达克100", "kind": "us", "launch_date": "1985-01-31",
-        "inception_date": "1985-01-31", "base_date": "1985-01-31",
-        "candidates": ["NASDAQ 100", "NASDAQ-100", "NDX"],
     },
     "consumer": {
         "name": "中证主要消费 000932", "kind": "csi", "code": "000932",
@@ -288,97 +282,6 @@ def csi_rows(code, old_history):
     source = "中证指数有限公司：历史行情滚动 PE；股息率来自官方估值 XLS（目前仅提供近期窗口）"
     return rows, source, "日频"
 
-def siblis_indices():
-    payload = get_json(f"{BASE_SIBLIS}/v1/indices")
-    return payload.get("indices", [])
-
-def pick_siblis_ticker(index_list, key):
-    for item in index_list:
-        name = str(item.get("index_name", "")).lower().replace("–", "-")
-        ticker = str(item.get("ticker", "")).upper()
-        if key == "sp500" and ("s&p 500" in name or "s&p500" in name or ticker in ("SPX", "SP500")):
-            return ticker
-        if key == "nasdaq" and ("nasdaq 100" in name or "nasdaq-100" in name or ticker == "NDX"):
-            return ticker
-    available = {str(x.get("ticker", "")).upper() for x in index_list}
-    for candidate in ASSETS[key]["candidates"]:
-        if candidate.upper() in available:
-            return candidate.upper()
-    return None
-
-def siblis_rows(ticker):
-    payload = get_json(f"{BASE_SIBLIS}/v1/{ticker}/pe-trailing")
-    rows = []
-    for item in payload.get("data", []):
-        dt = date_string(item.get("trading_day (EOD)") or item.get("date") or item.get("trading_day"))
-        value = number(item.get("value"))
-        if dt and value is not None and value > 0:
-            rows.append({"date": dt, "pe": value, "dividend_yield": None})
-    rows.sort(key=lambda x: x["date"])
-    if len(rows) < 2:
-        raise RuntimeError(f"Siblis {ticker} 的 TTM PE 历史样本不足")
-    return rows, "Siblis Research 免费历史估值接口（非商业使用；月末样本）", "月末"
-
-def trendonify_nasdaq_rows():
-    """Monthly Nasdaq-100 trailing PE history published by Trendonify."""
-    urls = [
-        "https://api.trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
-        "https://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
-    ]
-    errors = []
-    for url in urls:
-        try:
-            response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-            response.raise_for_status()
-            tables = pd.read_html(StringIO(response.text))
-            for frame in tables:
-                if isinstance(frame.columns, pd.MultiIndex):
-                    frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
-                cols = {str(c).strip().lower(): c for c in frame.columns}
-                date_col = next((v for k, v in cols.items() if "date" in k), None)
-                pe_col = next((v for k, v in cols.items() if "pe" in k and "ratio" in k and "forward" not in k), None)
-                if date_col is None or pe_col is None:
-                    continue
-                rows = []
-                for _, row in frame.iterrows():
-                    dt, pe = date_string(row[date_col]), number(row[pe_col])
-                    if dt and pe is not None and pe > 0:
-                        rows.append({"date": dt, "pe": pe, "dividend_yield": None})
-                rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
-                if len(rows) >= 30:
-                    return rows, "Trendonify：纳斯达克100月度历史 PE（非 Nasdaq 官方估值文件）", "月末"
-            errors.append(f"{url}: no table with >=30 observations")
-        except Exception as exc:
-            errors.append(f"{url}: {exc}")
-    raise RuntimeError("；".join(errors))
-
-def stock_marketdata_nasdaq_rows():
-    """Weekly Nasdaq-100 trailing PE published by 株式マーケットデータ."""
-    url = "https://stock-marketdata.com/per-nasdaq.html"
-    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    response.raise_for_status()
-    tables = pd.read_html(StringIO(response.text))
-    for frame in tables:
-        if isinstance(frame.columns, pd.MultiIndex):
-            frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
-        cols = {str(c).strip().lower().replace(chr(10), " "): c for c in frame.columns}
-        date_col = next((v for k, v in cols.items() if "日付" in k or "date" in k), None)
-        pe_col = next((v for k, v in cols.items() if "nasdaq100" in k.replace(" ", "").lower() and "実績per" in k.replace(" ", "").lower()), None)
-        if date_col is None or pe_col is None:
-            # Some table versions split the index name and metric into adjacent columns.
-            pe_col = next((v for k, v in cols.items() if "実績per" in k.replace(" ", "").lower()), None)
-        if date_col is None or pe_col is None:
-            continue
-        rows = []
-        for _, row in frame.iterrows():
-            dt, pe = date_string(row[date_col]), number(row[pe_col])
-            if dt and pe is not None and pe > 0:
-                rows.append({"date": dt, "pe": pe, "dividend_yield": None})
-        rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
-        if len(rows) >= 30:
-            return rows, "株式マーケットデータ：纳斯达克100周度实际 PER（TTM；自公开数据起点）", "周频"
-    raise RuntimeError("株式マーケットデータ 未返回至少30个纳斯达克100周度 TTM PE 样本")
-
 
 def filter_from_inception(rows, inception_date, frequency):
     """Use the full index-history period from its base/first-value date."""
@@ -530,12 +433,6 @@ def main():
         "assets": {},
         "history": [],
     }
-    try:
-        index_list = siblis_indices()
-    except Exception as exc:
-        index_list = []
-        print(f"Siblis index catalogue unavailable: {exc}")
-
     for key, cfg in ASSETS.items():
         try:
             if cfg["kind"] == "csi":
@@ -565,16 +462,6 @@ def main():
                     except Exception as exc2:
                         print(f"History of Market S&P fallback failed: {exc2}")
                         new_rows, source, frequency = dqydj_sp500_rows()
-            elif key == "nasdaq":
-                try:
-                    new_rows, source, frequency = trendonify_nasdaq_rows()
-                except Exception as trend_error:
-                    print(f"Trendonify Nasdaq history failed: {trend_error}")
-                    try:
-                        new_rows, source, frequency = stock_marketdata_nasdaq_rows()
-                    except Exception as alternate_error:
-                        print(f"株式マーケットデータ Nasdaq history failed: {alternate_error}")
-                        new_rows, source, frequency = siblis_rows("NDX")
             else:
                 raise RuntimeError(f"未配置估值数据源：{key}")
 
