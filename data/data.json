@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-02 07:18 UTC",
+  "updatedAt": "2026-11-02 07:20 UTC",
   "provider": "AKShare + CSI official data + public index valuation datasets",
   "notice": "PE 历史序列按指数正式发布日期截断，正式发布前的回溯数据不计入百分位；若数据源的最早 PE 晚于发布日期，会明确显示缺口。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测，不用价格推算。",
   "assets": {
