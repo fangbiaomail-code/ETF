@@ -168,9 +168,22 @@ def siblis_rows(ticker):
 
 def trendonify_nasdaq_rows():
     """Monthly Nasdaq-100 PE history; public series currently begins in 1990."""
-    url = "https://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio"
-    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    response.raise_for_status()
+    urls = [
+        "https://api.trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
+        "https://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
+    ]
+    last_error = None
+    response = None
+    for url in urls:
+        try:
+            candidate = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+            candidate.raise_for_status()
+            response = candidate
+            break
+        except Exception as exc:
+            last_error = exc
+    if response is None:
+        raise RuntimeError(f"Trendonify history endpoints unavailable: {last_error}")
     tables = pd.read_html(StringIO(response.text))
     for frame in tables:
         if isinstance(frame.columns, pd.MultiIndex):
