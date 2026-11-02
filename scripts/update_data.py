@@ -93,37 +93,51 @@ def merge_fields(preferred_rows, supplemental_rows, field):
             current[field] = point[field]
     return [merged[k] for k in sorted(merged)]
 
-def funddb_encode(act_time, authtoken="", gu_code="", pe_category="", type_="pc", ver="", version="2.2.7", year=""):
+def funddb_encode(
+    act_time, authtoken="", gu_code="", pe_category="", type_="pc", ver="new", version="2.2.7", year=-1
+):
     raw = f"{act_time}{authtoken}{gu_code}{pe_category}{type_}{ver}{version}{year}EWf45rlv#kfsr@k#gfksgkr"
-    h = hashlib.md5(raw.encode("utf-8")).hexdigest()
-    c=h[29:31]; d=h[2:4]; f=h[5:6]; hh=h[26:27]; m=h[6:8]; v=h[1:2]; y=h[0:2]
-    k=h[6:8]; w=h[8:9]; x=h[30:31]; P=h[11:14]; z=h[11:12]; j=h[2:5]; q=h[9:11]
-    H=h[23:25]; O=h[31:32]; C=h[25:27]; E=h[9:11]; A=h[27:29]; T=h[17:19]
-    F=h[26:27]; U=h[12:14]; S=h[25:26]; R=h[16:19]; K=h[17:21]; I=h[18:19]
-    D=h[21:23]; under=h[14:16]; B=h[29:32]; N=h[21:23]; V=h[24:26]; Y=h[16:17]
-    data = {
-        "tirgkjfs": f, "abiokytke": under, "u54rg5d": d, "kf54ge7": q,
-        "tiklsktr4": v, "lksytkjh": z, "sbnoywr": j, "bgd7h8tyu54": w,
-        "y654b5fs3tr": C, "bioduytlw": hh, "bd4uy742": P, "h67456y": R,
-        "bvytikwqjk": S, "ngd4uy551": B, "bgiuytkw": V, "nd354uy4752": K,
-        "ghtoiutkmlg": x, "bd24y6421f": Y, "tbvdiuytk": Y, "ibvytiqjek": F,
-        "jnhf8u5231": A, "fjlkatj": E, "hy5641d321t": H, "iogojti": U,
-        "ngd4yut78": U, "nkjhrew": c, "yt447e13f": O, "n3bf4uj7y7": k,
-        "nbf4uj7y432": hh, "yi854tew": m, "h13ey474": m, "quikgdky": y,
-    }
-    # Keep the original field mapping exactly as the upstream AKShare helper.
-    data.update({
-        "tirgkjfs": f, "abiokytke": under, "u54rg5d": d, "kf54ge7": q,
-        "tiklsktr4": v, "lksytkjh": z, "sbnoywr": j, "bgd7h8tyu54": w,
-        "y654b5fs3tr": C, "bioduytlw": hh, "bd4uy742": P, "h67456y": R,
-        "bvytikwqjk": S, "ngd4uy551": B, "bgiuytkw": V, "nd354uy4752": K,
-        "ghtoiutkmlg": x, "bd24y6421f": Y, "tbvdiuytk": Y, "ibvytiqjek": F,
-        "jnhf8u5231": A, "fjlkatj": E, "hy5641d321t": H, "iogojti": U,
-        "ngd4yut78": U, "nkjhrew": c, "yt447e13f": O, "n3bf4uj7y7": k,
-        "nbf4uj7y432": hh, "yi854tew": m, "h13ey474": m, "quikgdky": y,
-    })
-    # These aliases are the encoded parameter names expected by Jiucaishuo.
+    l = hashlib.md5(raw.encode("utf-8")).hexdigest()
+    c=l[29:31]; d=l[2:4]; f=l[5:6]; h=l[26:27]; m=l[6:8]; v=l[1:2]; y=l[0:2]
+    k=l[6:8]; w=l[8:9]; x=l[30:31]; P=l[11:14]; z=l[11:12]; j=l[2:5]; q=l[9:11]
+    H=l[23:25]; O=l[31:32]; C=l[25:27]; E=l[9:11]; A=l[27:29]; T=l[17:19]
+    F=l[26:27]; U=l[12:14]; S=l[25:26]; R=l[16:19]; K=l[17:21]; I=l[18:19]
+    D=l[21:23]; under=l[14:16]; B=l[29:32]; N=l[21:23]; V=l[24:26]; Y=l[16:17]
+    data = {}
+    data["tirgkjfs"] = y
+    data["abiokytke"] = N
+    data["u54rg5d"] = d
+    data["kf54ge7"] = O
+    data["tiklsktr4"] = v
+    data["lksytkjh"] = K
+    data["sbnoywr"] = H
+    data["bgd7h8tyu54"] = k
+    data["y654b5fs3tr"] = z
+    data["bioduytlw"] = f
+    data["bd4uy742"] = F
+    data["h67456y"] = R
+    data["bvytikwqjk"] = m
+    data["ngd4uy551"] = T
+    data["bgiuytkw"] = E
+    data["nd354uy4752"] = x
+    data["ghtoiutkmlg"] = P
+    data["bd24y6421f"] = V
+    data["tbvdiuytk"] = Y
+    data["ibvytiqjek"] = under
+    data["jnhf8u5231"] = q
+    data["fjlkatj"] = j
+    data["hy5641d321t"] = C
+    data["iogojti"] = S
+    data["ngd4yut78"] = U
+    data["nkjhrew"] = h
+    data["yt447e13f"] = w
+    data["n3bf4uj7y7"] = I
+    data["nbf4uj7y432"] = D
+    data["yi854tew"] = c
+    data["h13ey474"] = B
+    data["quikgdky"] = A
     return data
+
 
 def funddb_catalog():
     act_time = str(int(time.time() * 1000))
