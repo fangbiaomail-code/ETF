@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-02 11:20 UTC",
+  "updatedAt": "2026-11-02 11:42 UTC",
   "provider": "AKShare + CSI official data + public index valuation datasets",
   "notice": "PE 历史序列从指数基日或首个指数值日开始；指数基日早于正式发布日期的区间属于回溯历史，页面单独显示正式发布日期。历史百分位使用该起点以来全部可取得的有效 PE 样本。若数据源起点晚于指数历史起点，会明确显示缺口，不补造数据。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测。",
   "assets": {
@@ -29,17 +29,17 @@
       "inceptionDate": "2013-12-19",
       "launchDate": "2013-12-19",
       "baseDate": "2005-12-30",
-      "pe": 9.38,
-      "pe_pct": 0.8208573256557902,
+      "pe": 9.26,
+      "pe_pct": 0.818676047329709,
       "dividend_yield": 0.04769999999999999,
       "dividend_pct": 0.4894568690095847,
-      "date": "2026-10-30",
-      "peDate": "2026-10-30",
+      "date": "2026-11-02",
+      "peDate": "2026-11-02",
       "yieldDate": "2026-11-02",
       "historyStart": "2013-12-19",
       "yieldHistoryStart": "2013-12-19",
       "inceptionGapMonths": 0,
-      "sampleCount": 3126,
+      "sampleCount": 3127,
       "yieldSampleCount": 3130,
       "source": "韭菜说/FundDB 历史估值（红利低波，市盈率）；近期股息率补充自中证官方估值文件；股息率历史来自 韭菜说/FundDB 历史估值（红利低波，股息率）",
       "frequency": "日频",
@@ -20409,6 +20409,8 @@
     {
       "key": "dividend",
       "date": "2026-11-02",
+      "pe": 9.26,
+      "pe_pct": 0.818676047329709,
       "dividend_yield": 0.04769999999999999,
       "dividend_pct": 0.4894568690095847
     },
