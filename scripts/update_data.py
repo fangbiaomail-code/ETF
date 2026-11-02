@@ -94,7 +94,8 @@ def merge_fields(preferred_rows, supplemental_rows, field):
     return [merged[k] for k in sorted(merged)]
 
 def funddb_encode(
-    act_time, authtoken="", gu_code="", pe_category="", type_="pc", ver="new", version="2.2.7", year=-1
+    act_time="1688635494326", authtoken="", gu_code="399808.SZ",
+    pe_category="pb", type_="pc", ver="new", version="2.2.7", year=-1
 ):
     raw = f"{act_time}{authtoken}{gu_code}{pe_category}{type_}{ver}{version}{year}EWf45rlv#kfsr@k#gfksgkr"
     l = hashlib.md5(raw.encode("utf-8")).hexdigest()
@@ -103,40 +104,50 @@ def funddb_encode(
     H=l[23:25]; O=l[31:32]; C=l[25:27]; E=l[9:11]; A=l[27:29]; T=l[17:19]
     F=l[26:27]; U=l[12:14]; S=l[25:26]; R=l[16:19]; K=l[17:21]; I=l[18:19]
     D=l[21:23]; under=l[14:16]; B=l[29:32]; N=l[21:23]; V=l[24:26]; Y=l[16:17]
-    data = {}
-    data["tirgkjfs"] = y
-    data["abiokytke"] = N
-    data["u54rg5d"] = d
-    data["kf54ge7"] = O
-    data["tiklsktr4"] = v
-    data["lksytkjh"] = K
-    data["sbnoywr"] = H
-    data["bgd7h8tyu54"] = k
-    data["y654b5fs3tr"] = z
-    data["bioduytlw"] = f
-    data["bd4uy742"] = F
-    data["h67456y"] = R
-    data["bvytikwqjk"] = m
-    data["ngd4uy551"] = T
-    data["bgiuytkw"] = E
-    data["nd354uy4752"] = x
-    data["ghtoiutkmlg"] = P
-    data["bd24y6421f"] = V
-    data["tbvdiuytk"] = Y
-    data["ibvytiqjek"] = under
-    data["jnhf8u5231"] = q
-    data["fjlkatj"] = j
-    data["hy5641d321t"] = C
-    data["iogojti"] = S
-    data["ngd4yut78"] = U
-    data["nkjhrew"] = h
-    data["yt447e13f"] = w
-    data["n3bf4uj7y7"] = I
-    data["nbf4uj7y432"] = D
-    data["yi854tew"] = c
-    data["h13ey474"] = B
-    data["quikgdky"] = A
-    return data
+
+    def assign(
+        t, e, n, i, a, r, o, l_, u, c_, s, d_, under_, f_, h_, p, m_, g, v_, y_,
+        b_, k_, w_, x_, P_, z_, j_, q_, H_, O_, C_, E_, A_
+    ):
+        t["data"]["tirgkjfs"] = f_
+        t["data"]["abiokytke"] = under_
+        t["data"]["u54rg5d"] = e
+        t["data"]["kf54ge7"] = q_
+        t["data"]["tiklsktr4"] = d_
+        t["data"]["lksytkjh"] = z_
+        t["data"]["sbnoywr"] = j_
+        t["data"]["bgd7h8tyu54"] = w_
+        t["data"]["y654b5fs3tr"] = C_
+        t["data"]["bioduytlw"] = n
+        t["data"]["bd4uy742"] = P_
+        t["data"]["h67456y"] = o
+        t["data"]["bvytikwqjk"] = s
+        t["data"]["ngd4uy551"] = b_
+        t["data"]["bgiuytkw"] = v_
+        t["data"]["nd354uy4752"] = g
+        t["data"]["ghtoiutkmlg"] = x_
+        t["data"]["bd24y6421f"] = i
+        t["data"]["tbvdiuytk"] = l_
+        t["data"]["ibvytiqjek"] = p
+        t["data"]["jnhf8u5231"] = A_
+        t["data"]["fjlkatj"] = E_
+        t["data"]["hy5641d321t"] = H_
+        t["data"]["iogojti"] = r
+        t["data"]["ngd4yut78"] = a
+        t["data"]["nkjhrew"] = c_
+        t["data"]["yt447e13f"] = O_
+        t["data"]["n3bf4uj7y7"] = k_
+        t["data"]["nbf4uj7y432"] = h_
+        t["data"]["yi854tew"] = u
+        t["data"]["h13ey474"] = m_
+        t["data"]["quikgdky"] = y_
+
+    t = {"data": {}}
+    assign(
+        t, d, f, V, U, S, R, Y, c, h, m, v, N, y, D, under, B, x, E, A, T, I,
+        k, P, F, K, H, O, C, w, z, j, q
+    )
+    return t["data"]
 
 
 def funddb_catalog():
