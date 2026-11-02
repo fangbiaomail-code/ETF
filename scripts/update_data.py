@@ -96,7 +96,25 @@ def funddb_rows(code, indicator):
     import akshare as ak
     if not hasattr(ak, "index_value_name_funddb") or not hasattr(ak, "index_value_hist_funddb"):
         raise RuntimeError("当前 AKShare 版本不含 FundDB 历史估值接口")
-    names = ak.index_value_name_funddb()
+    # Older AKShare FundDB helpers omit a request timeout. Bound their HTTP
+    # calls so an unavailable source cannot stall the scheduled GitHub workflow.
+    original_get = requests.get
+    original_request = requests.sessions.Session.request
+    def bounded_get(*args, **kwargs):
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = 15
+        return original_get(*args, **kwargs)
+    def bounded_request(session, method, url, **kwargs):
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = 15
+        return original_request(session, method, url, **kwargs)
+    requests.get = bounded_get
+    requests.sessions.Session.request = bounded_request
+    try:
+        names = ak.index_value_name_funddb()
+    finally:
+        requests.get = original_get
+        requests.sessions.Session.request = original_request
     if names is None or names.empty:
         raise RuntimeError("FundDB 指数名称目录为空")
     name_col = next((c for c in names.columns if "指数名称" in str(c) or str(c).strip() in ("名称", "指数")), None)
@@ -111,7 +129,23 @@ def funddb_rows(code, indicator):
     if not matched:
         raise RuntimeError(f"FundDB 指数目录中找不到 {code} 对应指数，目录字段={list(names.columns)}")
     symbol = sorted(matched, key=lambda x: (len(x), x))[0]
-    frame = ak.index_value_hist_funddb(symbol=symbol, indicator=indicator)
+    original_get = requests.get
+    original_request = requests.sessions.Session.request
+    def bounded_get(*args, **kwargs):
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = 20
+        return original_get(*args, **kwargs)
+    def bounded_request(session, method, url, **kwargs):
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = 20
+        return original_request(session, method, url, **kwargs)
+    requests.get = bounded_get
+    requests.sessions.Session.request = bounded_request
+    try:
+        frame = ak.index_value_hist_funddb(symbol=symbol, indicator=indicator)
+    finally:
+        requests.get = original_get
+        requests.sessions.Session.request = original_request
     if frame is None or frame.empty:
         raise RuntimeError(f"FundDB {symbol} {indicator} 历史数据为空")
     date_col = next((c for c in frame.columns if "日期" in str(c) or str(c).lower() == "date"), None)
