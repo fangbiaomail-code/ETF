@@ -21,11 +21,22 @@ MIN_PERCENTILE_SAMPLES = 30
 HEADERS = {"User-Agent": "ETF-Valuation-Watch/1.1 (personal research dashboard)"}
 
 ASSETS = {
-    "sp500": {"name": "标普500", "kind": "us", "candidates": ["S&P 500", "S&P500", "SPX"]},
-    "dividend": {"name": "中证红利低波 H30269", "kind": "csi", "code": "H30269"},
-    "nasdaq": {"name": "纳斯达克100", "kind": "us", "candidates": ["NASDAQ 100", "NASDAQ-100", "NDX"]},
-    "consumer": {"name": "中证主要消费 000932", "kind": "csi", "code": "000932"},
-    "star50": {"name": "科创50 000688", "kind": "csi", "code": "000688"},
+    "sp500": {
+        "name": "标普500", "kind": "us", "launch_date": "1957-03-04",
+        "base_date": "1941–1943", "candidates": ["S&P 500", "S&P500", "SPX"],
+    },
+    "dividend": {
+        "name": "中证红利低波 H30269", "kind": "csi", "code": "H30269",
+        "launch_date": "2013-12-19", "base_date": "2005-12-30",
+    },
+    "nasdaq": {
+        "name": "纳斯达克100", "kind": "us", "launch_date": "1985-01-31",
+        "base_date": "1985-01-31", "candidates": ["NASDAQ 100", "NASDAQ-100", "NDX"],
+    },
+    "consumer": {
+        "name": "中证主要消费 000932", "kind": "csi", "code": "000932",
+        "launch_date": "2009-07-03", "base_date": "2004-12-31",
+    },
 }
 
 def get_json(url):
@@ -154,6 +165,45 @@ def siblis_rows(ticker):
     if len(rows) < 2:
         raise RuntimeError(f"Siblis {ticker} 的 TTM PE 历史样本不足")
     return rows, "Siblis Research 免费历史估值接口（非商业使用；月末样本）", "月末"
+
+def trendonify_nasdaq_rows():
+    """Monthly Nasdaq-100 PE history; public series currently begins in 1990."""
+    url = "https://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio"
+    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    response.raise_for_status()
+    tables = pd.read_html(StringIO(response.text))
+    for frame in tables:
+        if isinstance(frame.columns, pd.MultiIndex):
+            frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
+        cols = {str(c).strip().lower(): c for c in frame.columns}
+        date_col = next((v for k, v in cols.items() if "date" in k), None)
+        pe_col = next((v for k, v in cols.items() if "pe" in k and "ratio" in k and "forward" not in k), None)
+        if date_col is None or pe_col is None:
+            continue
+        rows = []
+        for _, row in frame.iterrows():
+            dt, pe = date_string(row[date_col]), number(row[pe_col])
+            if dt and pe is not None and pe > 0:
+                rows.append({"date": dt, "pe": pe, "dividend_yield": None})
+        rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
+        if len(rows) >= 30:
+            return rows, "Trendonify：纳斯达克100公开月度 PE 历史序列（最早可用数据约始于1990年；非 Nasdaq 官方估值文件）", "月末"
+    raise RuntimeError("Trendonify 未返回足够的纳斯达克100历史 PE 样本")
+
+def filter_from_launch(rows, launch_date, frequency):
+    """Exclude all pre-launch/back-tested observations from inception percentiles."""
+    if frequency in ("月末", "月频", "周频"):
+        launch_month = launch_date[:7]
+        return [x for x in rows if x.get("date", "")[:7] >= launch_month]
+    return [x for x in rows if x.get("date", "") >= launch_date]
+
+def months_between(start, end):
+    try:
+        sy, sm = (int(x) for x in start[:7].split("-"))
+        ey, em = (int(x) for x in end[:7].split("-"))
+        return max(0, (ey - sy) * 12 + em - sm)
+    except Exception:
+        return None
 
 def parse_valuation_payload(payload):
     found = []
@@ -286,7 +336,7 @@ def main():
     payload = {
         "updatedAt": now.strftime("%Y-%m-%d %H:%M UTC"),
         "provider": "AKShare + CSI official data + public index valuation datasets",
-        "notice": "PE-TTM 百分位仅在至少 30 个有效历史样本时计算；红利低波股息率官方文件目前只提供近期窗口，本网站会逐周积累，不伪造上市以来历史。",
+        "notice": "PE 历史序列按指数正式发布日期截断，正式发布前的回溯数据不计入百分位；若数据源的最早 PE 晚于发布日期，会明确显示缺口。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测，不用价格推算。",
         "assets": {},
         "history": [],
     }
@@ -300,29 +350,29 @@ def main():
         try:
             if cfg["kind"] == "csi":
                 new_rows, source, frequency = csi_rows(cfg["code"], old_history)
-            else:
-                ticker = pick_siblis_ticker(index_list, key) if index_list else None
-                if ticker:
+            elif key == "sp500":
+                try:
+                    new_rows, source, frequency = multpl_sp500_rows()
+                except Exception as exc:
+                    print(f"Multpl S&P history failed: {exc}")
                     try:
-                        new_rows, source, frequency = siblis_rows(ticker)
-                    except Exception as exc:
-                        print(f"Siblis {key} ({ticker}) failed: {exc}")
-                        if key != "sp500":
-                            raise
                         new_rows, source, frequency = hom_sp500_rows()
-                elif key == "sp500":
-                    try:
-                        new_rows, source, frequency = multpl_sp500_rows()
-                    except Exception as exc:
-                        print(f"Multpl S&P history failed: {exc}")
-                        try:
-                            new_rows, source, frequency = hom_sp500_rows()
-                        except Exception as exc2:
-                            print(f"History of Market S&P fallback failed: {exc2}")
-                            new_rows, source, frequency = dqydj_sp500_rows()
-                else:
-                    raise RuntimeError("免费数据目录暂未提供纳斯达克100可核验的 TTM PE 历史序列")
+                    except Exception as exc2:
+                        print(f"History of Market S&P fallback failed: {exc2}")
+                        new_rows, source, frequency = dqydj_sp500_rows()
+            elif key == "nasdaq":
+                try:
+                    new_rows, source, frequency = trendonify_nasdaq_rows()
+                except Exception as exc:
+                    print(f"Trendonify Nasdaq history failed: {exc}")
+                    new_rows, source, frequency = siblis_rows("NDX")
+            else:
+                raise RuntimeError(f"未配置估值数据源：{key}")
 
+            # Keep only observations from the index's official launch month/day onward.
+            new_rows = filter_from_launch(new_rows, cfg["launch_date"], frequency)
+            if len(new_rows) < 2:
+                raise RuntimeError(f"{cfg['name']} 正式发布日期之后的 PE 历史样本不足")
             merged_history = merge_history(key, new_rows, old_history)
             pe_points = [x for x in merged_history if x.get("pe") is not None]
             dy_points = [x for x in merged_history if x.get("dividend_yield") is not None]
@@ -354,15 +404,22 @@ def main():
                     out["dividend_pct"] = percentile(dy_seen, point["dividend_yield"])
             payload["history"].extend(output_points[k] for k in sorted(output_points))
 
+            pe_start = pe_points[0]["date"] if pe_points else None
+            launch_gap_months = months_between(cfg["launch_date"], pe_start) if pe_start else None
             payload["assets"][key] = {
                 "name": cfg["name"],
+                "launchDate": cfg["launch_date"],
+                "baseDate": cfg["base_date"],
                 "pe": current_pe,
                 "pe_pct": pe_pct,
                 "dividend_yield": current_dy,
                 "dividend_pct": dy_pct,
                 "date": latest_pe["date"] if latest_pe else (latest_dy["date"] if latest_dy else None),
-                "historyStart": pe_points[0]["date"] if pe_points else None,
+                "peDate": latest_pe["date"] if latest_pe else None,
+                "yieldDate": latest_dy["date"] if latest_dy else None,
+                "historyStart": pe_start,
                 "yieldHistoryStart": dy_points[0]["date"] if dy_points else None,
+                "launchGapMonths": launch_gap_months,
                 "sampleCount": len(pe_points),
                 "yieldSampleCount": len(dy_points),
                 "source": source,
@@ -381,9 +438,10 @@ def main():
                 payload["history"].extend([x for x in old_history if x.get("key") == key])
             else:
                 payload["assets"][key] = {
-                    "name": cfg["name"], "pe": None, "pe_pct": None,
-                    "dividend_yield": None, "dividend_pct": None,
-                    "date": None, "historyStart": None, "yieldHistoryStart": None,
+                    "name": cfg["name"], "launchDate": cfg["launch_date"], "baseDate": cfg["base_date"],
+                    "pe": None, "pe_pct": None, "dividend_yield": None, "dividend_pct": None,
+                    "date": None, "peDate": None, "yieldDate": None,
+                    "historyStart": None, "yieldHistoryStart": None, "launchGapMonths": None,
                     "sampleCount": 0, "yieldSampleCount": 0,
                     "source": None, "frequency": None, "status": "unavailable",
                     "error": str(exc)[:240],
