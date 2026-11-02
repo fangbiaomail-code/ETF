@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ETF 估值观察站</title>
+<title>ETF_fang</title>
 <style>
 :root{--bg:#f4f7fc;--panel:#fff;--line:#e4eaf3;--text:#17243b;--muted:#71809a;--blue:#3478e5;--green:#13865f;--greenbg:#e8f7f0;--amber:#a66a08;--amberbg:#fff5df;--red:#c14c4c;--redbg:#fff0f0;--shadow:0 8px 24px rgba(31,55,91,.055)}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#edf4ff 0,#f7f9fc 240px,var(--bg) 100%);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
@@ -14,7 +14,7 @@ main{max-width:1180px;margin:auto;padding:34px 22px 60px}.top{display:flex;justi
 </style>
 </head>
 <body><main>
-<header class="top"><div><div class="eyebrow">PERSONAL MARKET DASHBOARD</div><h1>ETF 估值观察站</h1><div class="sub">按指数正式发布以来的历史 PE 观察估值位置</div></div><div class="pill" id="updated">正在读取数据…</div></header>
+<header class="top"><div><div class="eyebrow">PERSONAL MARKET DASHBOARD</div><h1>ETF_fang</h1><div class="sub">按指数正式发布以来的历史 PE 观察估值位置</div></div><div class="pill" id="updated">正在读取数据…</div></header>
 <div class="notice">历史区间原则：PE 百分位从指数正式发布日期开始，使用该指数正式发布以来全部可取得的有效历史 PE 样本计算。指数基日早于正式发布日期时，基日到正式发布日之间的回溯区间不纳入百分位。若公开数据源的最早 PE 晚于正式发布日期，会单独标出缺口，不用指数价格反推 PE，也不拿其他指数的数据补齐。</div>
 <section class="grid" id="cards"></section>
 <section class="section"><h2>估值明细与历史覆盖</h2><div class="panel tablewrap"><table><thead><tr><th>指数</th><th>正式发布日期</th><th>指数基日</th><th>当前 PE</th><th>PE 历史百分位</th><th>股息率</th><th>股息率百分位</th><th>PE 数据起点</th><th>PE 样本数</th><th>最新 PE 日期</th></tr></thead><tbody id="rows"></tbody></table></div></section>
