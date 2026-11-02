@@ -348,6 +348,7 @@ def trendonify_nasdaq_rows():
             )
             proxy.raise_for_status()
             text_body = proxy.text
+            print("Trendonify Jina Reader preview:", repr(text_body[:2500]))
             month_map = {name: idx for idx, name in enumerate(
                 ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1
             )}
