@@ -6,7 +6,6 @@ which are accumulated locally over weekly runs and clearly date-stamped.
 U.S. PE history: public TTM valuation feeds. No price-derived PE is fabricated.
 """
 import json
-import re
 import hashlib
 import time
 from datetime import datetime, timezone
@@ -321,60 +320,53 @@ def siblis_rows(ticker):
     return rows, "Siblis Research 免费历史估值接口（非商业使用；月末样本）", "月末"
 
 def trendonify_nasdaq_rows():
-    """Monthly Nasdaq-100 PE history; public series currently begins in 1990."""
+    """Monthly Nasdaq-100 trailing PE history published by Trendonify."""
     urls = [
         "https://api.trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
         "https://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio",
     ]
-    last_error = None
-    response = None
+    errors = []
     for url in urls:
         try:
-            candidate = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-            candidate.raise_for_status()
-            response = candidate
-            break
-        except Exception as exc:
-            last_error = exc
-    if response is None:
-        # Trendonify may deny requests from hosted CI IPs. Try Jina Reader as a
-        # text-only retrieval proxy; preserve the source attribution and dates.
-        proxy_url = "https://r.jina.ai/http://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio"
-        try:
-            proxy = requests.get(
-                proxy_url,
-                headers={"User-Agent": "ETF-Valuation-Watch/1.1", "Accept": "text/plain"},
-                timeout=45,
-            )
-            proxy.raise_for_status()
-            text_body = proxy.text
-            print("Trendonify Jina Reader preview:", repr(text_body[:2500]))
-            month_map = {name: idx for idx, name in enumerate(
-                ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1
-            )}
-            rows = []
-            for line in text_body.splitlines():
-                match = re.search(r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(20\d{2}|19\d{2})\s*\|\s*([0-9]+(?:\.[0-9]+)?)", line, re.I)
-                if not match:
+            response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+            response.raise_for_status()
+            tables = pd.read_html(StringIO(response.text))
+            for frame in tables:
+                if isinstance(frame.columns, pd.MultiIndex):
+                    frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
+                cols = {str(c).strip().lower(): c for c in frame.columns}
+                date_col = next((v for k, v in cols.items() if "date" in k), None)
+                pe_col = next((v for k, v in cols.items() if "pe" in k and "ratio" in k and "forward" not in k), None)
+                if date_col is None or pe_col is None:
                     continue
-                month = month_map[match.group(1).title()]
-                year = int(match.group(2))
-                pe = float(match.group(3))
-                dt = (pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
-                rows.append({"date": dt, "pe": pe, "dividend_yield": None})
-            rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
-            if len(rows) >= 30:
-                return rows, "Trendonify 月度历史 PE（经 Jina Reader 文本代理获取；非 Nasdaq 官方估值文件）", "月末"
-            raise RuntimeError(f"Jina Reader returned only {len(rows)} parseable monthly PE observations")
-        except Exception as proxy_error:
-            raise RuntimeError(f"Trendonify direct access failed: {last_error}; proxy failed: {proxy_error}")
+                rows = []
+                for _, row in frame.iterrows():
+                    dt, pe = date_string(row[date_col]), number(row[pe_col])
+                    if dt and pe is not None and pe > 0:
+                        rows.append({"date": dt, "pe": pe, "dividend_yield": None})
+                rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
+                if len(rows) >= 30:
+                    return rows, "Trendonify：纳斯达克100月度历史 PE（非 Nasdaq 官方估值文件）", "月末"
+            errors.append(f"{url}: no table with >=30 observations")
+        except Exception as exc:
+            errors.append(f"{url}: {exc}")
+    raise RuntimeError("；".join(errors))
+
+def stock_marketdata_nasdaq_rows():
+    """Weekly Nasdaq-100 trailing PE published by 株式マーケットデータ."""
+    url = "https://stock-marketdata.com/per-nasdaq.html"
+    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    response.raise_for_status()
     tables = pd.read_html(StringIO(response.text))
     for frame in tables:
         if isinstance(frame.columns, pd.MultiIndex):
             frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
-        cols = {str(c).strip().lower(): c for c in frame.columns}
-        date_col = next((v for k, v in cols.items() if "date" in k), None)
-        pe_col = next((v for k, v in cols.items() if "pe" in k and "ratio" in k and "forward" not in k), None)
+        cols = {str(c).strip().lower().replace("\\n", " "): c for c in frame.columns}
+        date_col = next((v for k, v in cols.items() if "日付" in k or "date" in k), None)
+        pe_col = next((v for k, v in cols.items() if "nasdaq100" in k.replace(" ", "").lower() and "実績per" in k.replace(" ", "").lower()), None)
+        if date_col is None or pe_col is None:
+            # Some table versions split the index name and metric into adjacent columns.
+            pe_col = next((v for k, v in cols.items() if "実績per" in k.replace(" ", "").lower()), None)
         if date_col is None or pe_col is None:
             continue
         rows = []
@@ -384,8 +376,9 @@ def trendonify_nasdaq_rows():
                 rows.append({"date": dt, "pe": pe, "dividend_yield": None})
         rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
         if len(rows) >= 30:
-            return rows, "Trendonify：纳斯达克100公开月度 PE 历史序列（最早可用数据约始于1990年；非 Nasdaq 官方估值文件）", "月末"
-    raise RuntimeError("Trendonify 未返回足够的纳斯达克100历史 PE 样本")
+            return rows, "株式マーケットデータ：纳斯达克100周度实际 PER（TTM；自公开数据起点）", "周频"
+    raise RuntimeError("株式マーケットデータ 未返回至少30个纳斯达克100周度 TTM PE 样本")
+
 
 def filter_from_inception(rows, inception_date, frequency):
     """Use the full index-history period from its base/first-value date."""
@@ -575,9 +568,13 @@ def main():
             elif key == "nasdaq":
                 try:
                     new_rows, source, frequency = trendonify_nasdaq_rows()
-                except Exception as exc:
-                    print(f"Trendonify Nasdaq history failed: {exc}")
-                    new_rows, source, frequency = siblis_rows("NDX")
+                except Exception as trend_error:
+                    print(f"Trendonify Nasdaq history failed: {trend_error}")
+                    try:
+                        new_rows, source, frequency = stock_marketdata_nasdaq_rows()
+                    except Exception as alternate_error:
+                        print(f"株式マーケットデータ Nasdaq history failed: {alternate_error}")
+                        new_rows, source, frequency = siblis_rows("NDX")
             else:
                 raise RuntimeError(f"未配置估值数据源：{key}")
 
