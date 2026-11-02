@@ -23,19 +23,23 @@ HEADERS = {"User-Agent": "ETF-Valuation-Watch/1.1 (personal research dashboard)"
 ASSETS = {
     "sp500": {
         "name": "标普500", "kind": "us", "launch_date": "1957-03-04",
-        "base_date": "1941–1943", "candidates": ["S&P 500", "S&P500", "SPX"],
+        "inception_date": "1928-01-03", "base_date": "1941–1943",
+        "candidates": ["S&P 500", "S&P500", "SPX"],
     },
     "dividend": {
         "name": "中证红利低波 H30269", "kind": "csi", "code": "H30269",
-        "launch_date": "2013-12-19", "base_date": "2005-12-30",
+        "launch_date": "2013-12-19", "inception_date": "2005-12-30",
+        "base_date": "2005-12-30",
     },
     "nasdaq": {
         "name": "纳斯达克100", "kind": "us", "launch_date": "1985-01-31",
-        "base_date": "1985-01-31", "candidates": ["NASDAQ 100", "NASDAQ-100", "NDX"],
+        "inception_date": "1985-01-31", "base_date": "1985-01-31",
+        "candidates": ["NASDAQ 100", "NASDAQ-100", "NDX"],
     },
     "consumer": {
         "name": "中证主要消费 000932", "kind": "csi", "code": "000932",
-        "launch_date": "2009-07-03", "base_date": "2004-12-31",
+        "launch_date": "2009-07-03", "inception_date": "2004-12-31",
+        "base_date": "2004-12-31",
     },
 }
 
@@ -75,6 +79,71 @@ def percentile(values, current=None):
         return None
     target = current if current is not None else clean_values[-1]
     return sum(x <= target for x in clean_values) / len(clean_values)
+
+def merge_fields(preferred_rows, supplemental_rows, field):
+    merged = {x["date"]: dict(x) for x in preferred_rows if x.get("date")}
+    for point in supplemental_rows:
+        dt = point.get("date")
+        if not dt:
+            continue
+        current = merged.setdefault(dt, {"date": dt, "pe": None, "dividend_yield": None})
+        if point.get(field) is not None:
+            current[field] = point[field]
+    return [merged[k] for k in sorted(merged)]
+
+def funddb_rows(code, indicator):
+    """Fetch long-run index valuation history from FundDB via AKShare (if available)."""
+    import akshare as ak
+    if not hasattr(ak, "index_value_name_funddb") or not hasattr(ak, "index_value_hist_funddb"):
+        raise RuntimeError("当前 AKShare 版本不含 FundDB 历史估值接口")
+    names = ak.index_value_name_funddb()
+    if names is None or names.empty:
+        raise RuntimeError("FundDB 指数名称目录为空")
+    name_col = next((c for c in names.columns if "指数名称" in str(c) or str(c).strip() in ("名称", "指数")), None)
+    if name_col is None:
+        raise RuntimeError(f"FundDB 指数目录字段无法识别：{list(names.columns)}")
+    tokens = ("红利低波", "红利低波动") if code == "H30269" else ("主要消费",)
+    matched = []
+    for _, row in names.iterrows():
+        label = str(row[name_col]).strip()
+        if any(token in label for token in tokens):
+            matched.append(label)
+    if not matched:
+        raise RuntimeError(f"FundDB 指数目录中找不到 {code} 对应指数，目录字段={list(names.columns)}")
+    symbol = sorted(matched, key=lambda x: (len(x), x))[0]
+    frame = ak.index_value_hist_funddb(symbol=symbol, indicator=indicator)
+    if frame is None or frame.empty:
+        raise RuntimeError(f"FundDB {symbol} {indicator} 历史数据为空")
+    date_col = next((c for c in frame.columns if "日期" in str(c) or str(c).lower() == "date"), None)
+    value_col = next((c for c in frame.columns if indicator in str(c)), None)
+    if value_col is None:
+        aliases = ("PE", "P/E") if indicator == "市盈率" else ("DY", "股息率")
+        value_col = next((c for c in frame.columns if any(a in str(c).upper() for a in aliases)), None)
+    if date_col is None or value_col is None:
+        raise RuntimeError(f"FundDB {symbol} 字段无法识别：{list(frame.columns)}")
+    rows = []
+    for _, row in frame.iterrows():
+        dt, val = date_string(row[date_col]), number(row[value_col])
+        if not dt or val is None:
+            continue
+        if indicator == "市盈率":
+            if val <= 0:
+                continue
+            rows.append({"date": dt, "pe": val, "dividend_yield": None})
+        else:
+            if val < 0:
+                continue
+            # FundDB expresses dividend yield in percentage points (e.g. 4.7).
+            dy = val / 100 if val > 1 else val
+            rows.append({"date": dt, "pe": None, "dividend_yield": dy})
+    rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
+    if len(rows) < 30:
+        raise RuntimeError(f"FundDB {symbol} {indicator} 有效历史样本不足：{len(rows)}")
+    dates = pd.to_datetime([x["date"] for x in rows])
+    median_days = dates.to_series().diff().dt.days.median()
+    frequency = "月末" if median_days and median_days > 20 else ("周频" if median_days and median_days > 5 else "日频")
+    print(f"FundDB {symbol} {indicator}: {len(rows)} samples from {rows[0]['date']} to {rows[-1]['date']}")
+    return rows, f"FundDB 指数估值历史（{symbol}，{indicator}）", frequency
 
 def csi_rows(code, old_history):
     import akshare as ak
@@ -203,12 +272,12 @@ def trendonify_nasdaq_rows():
             return rows, "Trendonify：纳斯达克100公开月度 PE 历史序列（最早可用数据约始于1990年；非 Nasdaq 官方估值文件）", "月末"
     raise RuntimeError("Trendonify 未返回足够的纳斯达克100历史 PE 样本")
 
-def filter_from_launch(rows, launch_date, frequency):
-    """Exclude all pre-launch/back-tested observations from inception percentiles."""
+def filter_from_inception(rows, inception_date, frequency):
+    """Use the full index-history period from its base/first-value date."""
     if frequency in ("月末", "月频", "周频"):
-        launch_month = launch_date[:7]
-        return [x for x in rows if x.get("date", "")[:7] >= launch_month]
-    return [x for x in rows if x.get("date", "") >= launch_date]
+        start_month = inception_date[:7]
+        return [x for x in rows if x.get("date", "")[:7] >= start_month]
+    return [x for x in rows if x.get("date", "") >= inception_date]
 
 def months_between(start, end):
     try:
@@ -349,7 +418,7 @@ def main():
     payload = {
         "updatedAt": now.strftime("%Y-%m-%d %H:%M UTC"),
         "provider": "AKShare + CSI official data + public index valuation datasets",
-        "notice": "PE 历史序列按指数正式发布日期截断，正式发布前的回溯数据不计入百分位；若数据源的最早 PE 晚于发布日期，会明确显示缺口。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测，不用价格推算。",
+        "notice": "PE 历史序列从指数基日或首个指数值日开始；指数基日早于正式发布日期的区间属于回溯历史，页面单独显示正式发布日期。历史百分位使用该起点以来全部可取得的有效 PE 样本。若数据源起点晚于指数历史起点，会明确显示缺口，不补造数据。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测。",
         "assets": {},
         "history": [],
     }
@@ -362,7 +431,22 @@ def main():
     for key, cfg in ASSETS.items():
         try:
             if cfg["kind"] == "csi":
-                new_rows, source, frequency = csi_rows(cfg["code"], old_history)
+                csi_fallback, csi_source, csi_frequency = csi_rows(cfg["code"], old_history)
+                try:
+                    funddb_pe, funddb_pe_source, funddb_frequency = funddb_rows(cfg["code"], "市盈率")
+                    new_rows = merge_fields(funddb_pe, csi_fallback, "dividend_yield")
+                    source = funddb_pe_source + "；近期股息率补充自中证官方估值文件"
+                    frequency = funddb_frequency
+                except Exception as funddb_pe_error:
+                    print(f"FundDB PE history unavailable for {cfg['code']}: {funddb_pe_error}")
+                    new_rows, source, frequency = csi_fallback, csi_source, csi_frequency
+                if key == "dividend":
+                    try:
+                        funddb_dy, funddb_dy_source, _ = funddb_rows(cfg["code"], "股息率")
+                        new_rows = merge_fields(new_rows, funddb_dy, "dividend_yield")
+                        source += "；股息率历史来自 " + funddb_dy_source
+                    except Exception as funddb_dy_error:
+                        print(f"FundDB dividend-yield history unavailable: {funddb_dy_error}")
             elif key == "sp500":
                 try:
                     new_rows, source, frequency = multpl_sp500_rows()
@@ -382,10 +466,10 @@ def main():
             else:
                 raise RuntimeError(f"未配置估值数据源：{key}")
 
-            # Keep only observations from the index's official launch month/day onward.
-            new_rows = filter_from_launch(new_rows, cfg["launch_date"], frequency)
+            # Keep the complete index-history period from its base/first-value date.
+            new_rows = filter_from_inception(new_rows, cfg["inception_date"], frequency)
             if len(new_rows) < 2:
-                raise RuntimeError(f"{cfg['name']} 正式发布日期之后的 PE 历史样本不足")
+                raise RuntimeError(f"{cfg['name']} 指数历史起点之后的 PE 样本不足")
             merged_history = merge_history(key, new_rows, old_history)
             pe_points = [x for x in merged_history if x.get("pe") is not None]
             dy_points = [x for x in merged_history if x.get("dividend_yield") is not None]
@@ -418,9 +502,10 @@ def main():
             payload["history"].extend(output_points[k] for k in sorted(output_points))
 
             pe_start = pe_points[0]["date"] if pe_points else None
-            launch_gap_months = months_between(cfg["launch_date"], pe_start) if pe_start else None
+            inception_gap_months = months_between(cfg["inception_date"], pe_start) if pe_start else None
             payload["assets"][key] = {
                 "name": cfg["name"],
+                "inceptionDate": cfg["inception_date"],
                 "launchDate": cfg["launch_date"],
                 "baseDate": cfg["base_date"],
                 "pe": current_pe,
@@ -432,7 +517,7 @@ def main():
                 "yieldDate": latest_dy["date"] if latest_dy else None,
                 "historyStart": pe_start,
                 "yieldHistoryStart": dy_points[0]["date"] if dy_points else None,
-                "launchGapMonths": launch_gap_months,
+                "inceptionGapMonths": inception_gap_months,
                 "sampleCount": len(pe_points),
                 "yieldSampleCount": len(dy_points),
                 "source": source,
@@ -451,10 +536,10 @@ def main():
                 payload["history"].extend([x for x in old_history if x.get("key") == key])
             else:
                 payload["assets"][key] = {
-                    "name": cfg["name"], "launchDate": cfg["launch_date"], "baseDate": cfg["base_date"],
+                    "name": cfg["name"], "inceptionDate": cfg["inception_date"], "launchDate": cfg["launch_date"], "baseDate": cfg["base_date"],
                     "pe": None, "pe_pct": None, "dividend_yield": None, "dividend_pct": None,
                     "date": None, "peDate": None, "yieldDate": None,
-                    "historyStart": None, "yieldHistoryStart": None, "launchGapMonths": None,
+                    "historyStart": None, "yieldHistoryStart": None, "inceptionGapMonths": None,
                     "sampleCount": 0, "yieldSampleCount": 0,
                     "source": None, "frequency": None, "status": "unavailable",
                     "error": str(exc)[:240],
