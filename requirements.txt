@@ -1,5 +1,5 @@
-akshare>=1.16.0
-pandas>=2.0
+akshare==1.15.14
+pandas>=2.0,<3.0
 requests>=2.31
 xlrd>=2.0.1
 lxml>=5.0
