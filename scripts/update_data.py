@@ -6,6 +6,8 @@ which are accumulated locally over weekly runs and clearly date-stamped.
 U.S. PE history: public TTM valuation feeds. No price-derived PE is fabricated.
 """
 import json
+import hashlib
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from io import StringIO
@@ -91,85 +93,101 @@ def merge_fields(preferred_rows, supplemental_rows, field):
             current[field] = point[field]
     return [merged[k] for k in sorted(merged)]
 
+def funddb_encode(act_time, authtoken="", gu_code="", pe_category="", type_="pc", ver="", version="2.2.7", year=""):
+    raw = f"{act_time}{authtoken}{gu_code}{pe_category}{type_}{ver}{version}{year}EWf45rlv#kfsr@k#gfksgkr"
+    h = hashlib.md5(raw.encode("utf-8")).hexdigest()
+    c=h[29:31]; d=h[2:4]; f=h[5:6]; hh=h[26:27]; m=h[6:8]; v=h[1:2]; y=h[0:2]
+    k=h[6:8]; w=h[8:9]; x=h[30:31]; P=h[11:14]; z=h[11:12]; j=h[2:5]; q=h[9:11]
+    H=h[23:25]; O=h[31:32]; C=h[25:27]; E=h[9:11]; A=h[27:29]; T=h[17:19]
+    F=h[26:27]; U=h[12:14]; S=h[25:26]; R=h[16:19]; K=h[17:21]; I=h[18:19]
+    D=h[21:23]; under=h[14:16]; B=h[29:32]; N=h[21:23]; V=h[24:26]; Y=h[16:17]
+    data = {
+        "tirgkjfs": f, "abiokytke": under, "u54rg5d": d, "kf54ge7": q,
+        "tiklsktr4": v, "lksytkjh": z, "sbnoywr": j, "bgd7h8tyu54": w,
+        "y654b5fs3tr": C, "bioduytlw": hh, "bd4uy742": P, "h67456y": R,
+        "bvytikwqjk": S, "ngd4uy551": B, "bgiuytkw": V, "nd354uy4752": K,
+        "ghtoiutkmlg": x, "bd24y6421f": Y, "tbvdiuytk": Y, "ibvytiqjek": F,
+        "jnhf8u5231": A, "fjlkatj": E, "hy5641d321t": H, "iogojti": U,
+        "ngd4yut78": U, "nkjhrew": c, "yt447e13f": O, "n3bf4uj7y7": k,
+        "nbf4uj7y432": hh, "yi854tew": m, "h13ey474": m, "quikgdky": y,
+    }
+    # Keep the original field mapping exactly as the upstream AKShare helper.
+    data.update({
+        "tirgkjfs": f, "abiokytke": under, "u54rg5d": d, "kf54ge7": q,
+        "tiklsktr4": v, "lksytkjh": z, "sbnoywr": j, "bgd7h8tyu54": w,
+        "y654b5fs3tr": C, "bioduytlw": hh, "bd4uy742": P, "h67456y": R,
+        "bvytikwqjk": S, "ngd4uy551": B, "bgiuytkw": V, "nd354uy4752": K,
+        "ghtoiutkmlg": x, "bd24y6421f": Y, "tbvdiuytk": Y, "ibvytiqjek": F,
+        "jnhf8u5231": A, "fjlkatj": E, "hy5641d321t": H, "iogojti": U,
+        "ngd4yut78": U, "nkjhrew": c, "yt447e13f": O, "n3bf4uj7y7": k,
+        "nbf4uj7y432": hh, "yi854tew": m, "h13ey474": m, "quikgdky": y,
+    })
+    # These aliases are the encoded parameter names expected by Jiucaishuo.
+    return data
+
+def funddb_catalog():
+    act_time = str(int(time.time() * 1000))
+    payload = {
+        "type": "pc", "version": "2.2.7", "authtoken": "", "act_time": act_time,
+    }
+    payload.update(funddb_encode(act_time, gu_code="", pe_category="", type_="pc", ver="", year=""))
+    response = requests.post(
+        "https://api.jiucaishuo.com/v2/guzhi/showcategory",
+        json=payload, headers=HEADERS, timeout=20,
+    )
+    response.raise_for_status()
+    data = response.json()["data"]["right_list"]
+    columns = [
+        "指数开始时间", "-", "指数名称", "指数代码", "最新PE", "最新PB", "PE分位",
+        "PB分位", "股息率", "-", "-", "-", "更新时间", "股息率分位",
+        "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+    ]
+    frame = pd.DataFrame(data)
+    if len(frame.columns) != len(columns):
+        raise RuntimeError(f"FundDB 指数目录列数异常：{len(frame.columns)}")
+    frame.columns = columns
+    return frame
+
 def funddb_rows(code, indicator):
-    """Fetch long-run index valuation history from FundDB via AKShare (if available)."""
-    import akshare as ak
-    if not hasattr(ak, "index_value_name_funddb") or not hasattr(ak, "index_value_hist_funddb"):
-        raise RuntimeError("当前 AKShare 版本不含 FundDB 历史估值接口")
-    # Older AKShare FundDB helpers omit a request timeout. Bound their HTTP
-    # calls so an unavailable source cannot stall the scheduled GitHub workflow.
-    original_get = requests.get
-    original_request = requests.sessions.Session.request
-    def bounded_get(*args, **kwargs):
-        if kwargs.get("timeout") is None:
-            kwargs["timeout"] = 15
-        return original_get(*args, **kwargs)
-    def bounded_request(session, method, url, **kwargs):
-        if kwargs.get("timeout") is None:
-            kwargs["timeout"] = 15
-        return original_request(session, method, url, **kwargs)
-    requests.get = bounded_get
-    requests.sessions.Session.request = bounded_request
-    try:
-        names = ak.index_value_name_funddb()
-    finally:
-        requests.get = original_get
-        requests.sessions.Session.request = original_request
-    if names is None or names.empty:
-        raise RuntimeError("FundDB 指数名称目录为空")
-    name_col = next((c for c in names.columns if "指数名称" in str(c) or str(c).strip() in ("名称", "指数")), None)
-    if name_col is None:
-        raise RuntimeError(f"FundDB 指数目录字段无法识别：{list(names.columns)}")
+    """Full-history index valuation series from Jiucaishuo/FundDB, if available."""
+    catalog = funddb_catalog()
     tokens = ("红利低波", "红利低波动") if code == "H30269" else ("主要消费",)
-    matched = []
-    for _, row in names.iterrows():
-        label = str(row[name_col]).strip()
-        if any(token in label for token in tokens):
-            matched.append(label)
-    if not matched:
-        raise RuntimeError(f"FundDB 指数目录中找不到 {code} 对应指数，目录字段={list(names.columns)}")
-    symbol = sorted(matched, key=lambda x: (len(x), x))[0]
-    original_get = requests.get
-    original_request = requests.sessions.Session.request
-    def bounded_get(*args, **kwargs):
-        if kwargs.get("timeout") is None:
-            kwargs["timeout"] = 20
-        return original_get(*args, **kwargs)
-    def bounded_request(session, method, url, **kwargs):
-        if kwargs.get("timeout") is None:
-            kwargs["timeout"] = 20
-        return original_request(session, method, url, **kwargs)
-    requests.get = bounded_get
-    requests.sessions.Session.request = bounded_request
-    try:
-        frame = ak.index_value_hist_funddb(symbol=symbol, indicator=indicator)
-    finally:
-        requests.get = original_get
-        requests.sessions.Session.request = original_request
-    if frame is None or frame.empty:
-        raise RuntimeError(f"FundDB {symbol} {indicator} 历史数据为空")
-    date_col = next((c for c in frame.columns if "日期" in str(c) or str(c).lower() == "date"), None)
-    value_col = next((c for c in frame.columns if indicator in str(c)), None)
-    if value_col is None:
-        aliases = ("PE", "P/E") if indicator == "市盈率" else ("DY", "股息率")
-        value_col = next((c for c in frame.columns if any(a in str(c).upper() for a in aliases)), None)
-    if date_col is None or value_col is None:
-        raise RuntimeError(f"FundDB {symbol} 字段无法识别：{list(frame.columns)}")
+    candidates = catalog[catalog["指数名称"].astype(str).apply(lambda x: any(t in x for t in tokens))]
+    if candidates.empty:
+        raise RuntimeError(f"FundDB 指数目录中找不到 {code}")
+    symbol = sorted(candidates["指数名称"].astype(str).tolist(), key=lambda x: (len(x), x))[0]
+    code_row = candidates[candidates["指数名称"].astype(str) == symbol].iloc[0]
+    gu_code = str(code_row["指数代码"])
+    metric = {"市盈率": "pe", "股息率": "xilv"}[indicator]
+    act_time = str(int(time.time() * 1000))
+    payload = {
+        "gu_code": gu_code, "pe_category": metric, "year": -1, "ver": "new",
+        "type": "pc", "version": "2.2.7", "authtoken": "", "act_time": act_time,
+    }
+    payload.update(funddb_encode(
+        act_time, gu_code=gu_code, pe_category=metric, type_="pc", ver="new",
+        version="2.2.7", year=-1,
+    ))
+    response = requests.post(
+        "https://api.jiucaishuo.com/v2/guzhi/newtubiaolinedata",
+        json=payload, headers=HEADERS, timeout=25,
+    )
+    response.raise_for_status()
+    data = response.json()["data"]["tubiao"]["series"]
+    if len(data) < 2:
+        raise RuntimeError(f"FundDB {symbol} {indicator} 返回序列不完整")
     rows = []
-    for _, row in frame.iterrows():
-        dt, val = date_string(row[date_col]), number(row[value_col])
-        if not dt or val is None:
+    for timestamp, raw_value in data[1]["data"]:
+        dt = pd.to_datetime(timestamp, unit="ms", utc=True).tz_convert("Asia/Shanghai").strftime("%Y-%m-%d")
+        val = number(raw_value)
+        if val is None:
             continue
         if indicator == "市盈率":
-            if val <= 0:
-                continue
-            rows.append({"date": dt, "pe": val, "dividend_yield": None})
+            if val > 0:
+                rows.append({"date": dt, "pe": val, "dividend_yield": None})
         else:
-            if val < 0:
-                continue
-            # FundDB expresses dividend yield in percentage points (e.g. 4.7).
-            dy = val / 100 if val > 1 else val
-            rows.append({"date": dt, "pe": None, "dividend_yield": dy})
+            if val >= 0:
+                rows.append({"date": dt, "pe": None, "dividend_yield": val / 100 if val > 1 else val})
     rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
     if len(rows) < 30:
         raise RuntimeError(f"FundDB {symbol} {indicator} 有效历史样本不足：{len(rows)}")
@@ -177,7 +195,8 @@ def funddb_rows(code, indicator):
     median_days = dates.to_series().diff().dt.days.median()
     frequency = "月末" if median_days and median_days > 20 else ("周频" if median_days and median_days > 5 else "日频")
     print(f"FundDB {symbol} {indicator}: {len(rows)} samples from {rows[0]['date']} to {rows[-1]['date']}")
-    return rows, f"FundDB 指数估值历史（{symbol}，{indicator}）", frequency
+    return rows, f"韭菜说/FundDB 历史估值（{symbol}，{indicator}）", frequency
+
 
 def csi_rows(code, old_history):
     import akshare as ak
