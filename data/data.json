@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-02 11:03 UTC",
+  "updatedAt": "2026-11-02 11:10 UTC",
   "provider": "AKShare + CSI official data + public index valuation datasets",
   "notice": "PE 历史序列从指数基日或首个指数值日开始；指数基日早于正式发布日期的区间属于回溯历史，页面单独显示正式发布日期。历史百分位使用该起点以来全部可取得的有效 PE 样本。若数据源起点晚于指数历史起点，会明确显示缺口，不补造数据。PE 百分位至少需要 30 个有效样本。股息率只使用可核验的历史观测。",
   "assets": {
@@ -43,27 +43,6 @@
       "yieldSampleCount": 3129,
       "source": "韭菜说/FundDB 历史估值（红利低波，市盈率）；近期股息率补充自中证官方估值文件；股息率历史来自 韭菜说/FundDB 历史估值（红利低波，股息率）",
       "frequency": "日频",
-      "status": "ok"
-    },
-    "nasdaq": {
-      "name": "纳斯达克100",
-      "inceptionDate": "1985-01-31",
-      "launchDate": "1985-01-31",
-      "baseDate": "1985-01-31",
-      "pe": 35.09,
-      "pe_pct": null,
-      "dividend_yield": null,
-      "dividend_pct": null,
-      "date": "2026-09-30",
-      "peDate": "2026-09-30",
-      "yieldDate": null,
-      "historyStart": "2023-12-29",
-      "yieldHistoryStart": null,
-      "inceptionGapMonths": 467,
-      "sampleCount": 9,
-      "yieldSampleCount": 0,
-      "source": "Siblis Research 免费历史估值接口（非商业使用；月末样本）",
-      "frequency": "月末",
       "status": "ok"
     },
     "consumer": {
@@ -20426,60 +20405,6 @@
       "pe_pct": 0.8208573256557902,
       "dividend_yield": 0.043,
       "dividend_pct": 0.3419622882710131
-    },
-    {
-      "key": "nasdaq",
-      "date": "2023-12-29",
-      "pe": 30.25,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2024-06-28",
-      "pe": 31.82,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2024-12-31",
-      "pe": 32.36,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2025-03-31",
-      "pe": 28.73,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2025-06-30",
-      "pe": 32.24,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2025-09-30",
-      "pe": 32.98,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2025-12-31",
-      "pe": 32.32,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2026-06-30",
-      "pe": 35.24,
-      "pe_pct": null
-    },
-    {
-      "key": "nasdaq",
-      "date": "2026-09-30",
-      "pe": 35.09,
-      "pe_pct": null
     },
     {
       "key": "sp500",
