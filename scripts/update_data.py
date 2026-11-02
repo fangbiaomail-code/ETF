@@ -361,7 +361,7 @@ def stock_marketdata_nasdaq_rows():
     for frame in tables:
         if isinstance(frame.columns, pd.MultiIndex):
             frame.columns = [" ".join(str(y) for y in x if str(y) != "nan") for x in frame.columns]
-        cols = {str(c).strip().lower().replace("\\n", " "): c for c in frame.columns}
+        cols = {str(c).strip().lower().replace(chr(10), " "): c for c in frame.columns}
         date_col = next((v for k, v in cols.items() if "日付" in k or "date" in k), None)
         pe_col = next((v for k, v in cols.items() if "nasdaq100" in k.replace(" ", "").lower() and "実績per" in k.replace(" ", "").lower()), None)
         if date_col is None or pe_col is None:
