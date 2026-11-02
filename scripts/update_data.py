@@ -25,12 +25,12 @@ HEADERS = {"User-Agent": "ETF-Valuation-Watch/1.1 (personal research dashboard)"
 ASSETS = {
     "sp500": {
         "name": "标普500", "kind": "us", "launch_date": "1957-03-04",
-        "inception_date": "1928-01-03", "base_date": "1941–1943",
+        "inception_date": "1957-03-04", "base_date": "1941–1943",
         "candidates": ["S&P 500", "S&P500", "SPX"],
     },
     "dividend": {
         "name": "中证红利低波 H30269", "kind": "csi", "code": "H30269",
-        "launch_date": "2013-12-19", "inception_date": "2005-12-30",
+        "launch_date": "2013-12-19", "inception_date": "2013-12-19",
         "base_date": "2005-12-30",
     },
     "nasdaq": {
@@ -40,7 +40,7 @@ ASSETS = {
     },
     "consumer": {
         "name": "中证主要消费 000932", "kind": "csi", "code": "000932",
-        "launch_date": "2009-07-03", "inception_date": "2004-12-31",
+        "launch_date": "2009-07-03", "inception_date": "2009-07-03",
         "base_date": "2004-12-31",
     },
 }
