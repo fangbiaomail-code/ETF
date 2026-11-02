@@ -176,11 +176,17 @@ def funddb_catalog():
 def funddb_rows(code, indicator):
     """Full-history index valuation series from Jiucaishuo/FundDB, if available."""
     catalog = funddb_catalog()
-    tokens = ("红利低波", "红利低波动") if code == "H30269" else ("主要消费",)
-    candidates = catalog[catalog["指数名称"].astype(str).apply(lambda x: any(t in x for t in tokens))]
+    code_candidates = catalog[catalog["指数代码"].astype(str).str.contains(code, regex=False, na=False)]
+    if not code_candidates.empty:
+        candidates = code_candidates
+    else:
+        tokens = ("红利低波", "红利低波动") if code == "H30269" else ("主要消费", "中证消费", "消费")
+        candidates = catalog[catalog["指数名称"].astype(str).apply(lambda x: any(t in x for t in tokens))]
     if candidates.empty:
+        related = catalog[catalog["指数名称"].astype(str).str.contains("消费|红利", regex=True, na=False)]
+        print(f"FundDB related index candidates: {related[['指数名称', '指数代码']].to_dict('records')[:50]}")
         raise RuntimeError(f"FundDB 指数目录中找不到 {code}")
-    symbol = sorted(candidates["指数名称"].astype(str).tolist(), key=lambda x: (len(x), x))[0]
+    symbol = sorted(candidates["指数名称"].astype(str).tolist(), key=lambda x: (0 if (code in str(candidates[candidates['指数名称'].astype(str) == x].iloc[0]['指数代码'])) else 1, len(x), x))[0]
     code_row = candidates[candidates["指数名称"].astype(str) == symbol].iloc[0]
     gu_code = str(code_row["指数代码"])
     metric = {"市盈率": "pe", "股息率": "xilv"}[indicator]
