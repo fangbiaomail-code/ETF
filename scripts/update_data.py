@@ -6,6 +6,7 @@ which are accumulated locally over weekly runs and clearly date-stamped.
 U.S. PE history: public TTM valuation feeds. No price-derived PE is fabricated.
 """
 import json
+import re
 import hashlib
 import time
 from datetime import datetime, timezone
