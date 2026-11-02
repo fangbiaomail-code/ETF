@@ -336,7 +336,36 @@ def trendonify_nasdaq_rows():
         except Exception as exc:
             last_error = exc
     if response is None:
-        raise RuntimeError(f"Trendonify history endpoints unavailable: {last_error}")
+        # Trendonify may deny requests from hosted CI IPs. Try Jina Reader as a
+        # text-only retrieval proxy; preserve the source attribution and dates.
+        proxy_url = "https://r.jina.ai/http://trendonify.com/united-states/stock-market/nasdaq-100/pe-ratio"
+        try:
+            proxy = requests.get(
+                proxy_url,
+                headers={"User-Agent": "ETF-Valuation-Watch/1.1", "Accept": "text/plain"},
+                timeout=45,
+            )
+            proxy.raise_for_status()
+            text_body = proxy.text
+            month_map = {name: idx for idx, name in enumerate(
+                ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1
+            )}
+            rows = []
+            for line in text_body.splitlines():
+                match = re.search(r"\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\s+(20\\d{2}|19\\d{2})\\s*\\|\\s*([0-9]+(?:\\.[0-9]+)?)", line, re.I)
+                if not match:
+                    continue
+                month = month_map[match.group(1).title()]
+                year = int(match.group(2))
+                pe = float(match.group(3))
+                dt = (pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
+                rows.append({"date": dt, "pe": pe, "dividend_yield": None})
+            rows = sorted({x["date"]: x for x in rows}.values(), key=lambda x: x["date"])
+            if len(rows) >= 30:
+                return rows, "Trendonify 月度历史 PE（经 Jina Reader 文本代理获取；非 Nasdaq 官方估值文件）", "月末"
+            raise RuntimeError(f"Jina Reader returned only {len(rows)} parseable monthly PE observations")
+        except Exception as proxy_error:
+            raise RuntimeError(f"Trendonify direct access failed: {last_error}; proxy failed: {proxy_error}")
     tables = pd.read_html(StringIO(response.text))
     for frame in tables:
         if isinstance(frame.columns, pd.MultiIndex):
