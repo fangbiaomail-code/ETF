@@ -19,7 +19,7 @@ main{max-width:1180px;margin:auto;padding:34px 22px 60px}.top{display:flex;justi
 <section class="grid" id="cards"></section>
 <section class="section"><h2>估值明细与历史覆盖</h2><div class="panel tablewrap"><table><thead><tr><th>指数</th><th>正式发布日期</th><th>指数基日</th><th>当前 PE</th><th>PE 历史百分位</th><th>股息率</th><th>股息率百分位</th><th>PE 数据起点</th><th>PE 样本数</th><th>最新 PE 日期</th></tr></thead><tbody id="rows"></tbody></table></div></section>
 <section class="section"><div class="panel"><div class="chart-head"><h2 style="margin:0">历史 PE 估值曲线</h2><select id="which"><option value="sp500">标普500</option><option value="dividend">红利低波</option><option value="nasdaq">纳斯达克100</option><option value="consumer">中证主要消费</option></select></div><canvas class="chart" id="chart" width="1100" height="330"></canvas><div class="source" id="chartsource">曲线按指数正式发布日期之后实际取得的历史 PE 样本绘制。</div></div></section>
-<div class="foot">历史百分位 = 历史 PE 样本中小于或等于当前 PE 的比例。百分位至少需要 30 个有效样本；样本不足时不显示百分位。指数基日与正式发布日期是不同概念：本页从正式发布日期开始统计；基日到正式发布日期之间的回溯区间不纳入百分位。<br>数据来源：标普500使用 Multpl 历史 PE；纳斯达克100使用 Siblis 免费历史估值接口；中证红利低波和中证主要消费优先使用韭菜说/FundDB 的历史估值序列，数据源不可用时回退至中证指数官方数据。股息率优先使用可取得的 FundDB 历史序列。数据源可用区间和频率以各卡片展示为准。<br>本网站仅供个人研究，不构成投资建议。</div>
+<div class="foot">历史百分位 = 历史 PE 样本中小于或等于当前 PE 的比例。百分位至少需要 30 个有效样本；样本不足时不显示百分位。指数基日与正式发布日期是不同概念：本页从正式发布日期开始统计；基日到正式发布日期之间的回溯区间不纳入百分位。<br>数据来源：标普500使用 Multpl 历史 PE；纳斯达克100优先使用 Trendonify 月度历史 PE（非 Nasdaq 官方数据，当前公开序列从1990年5月起；若该来源不可用则回退至 Siblis 免费样本）；中证红利低波和中证主要消费优先使用韭菜说/FundDB 历史估值序列。股息率优先使用可取得的 FundDB 历史序列。各指数实际数据起点、样本数及来源以卡片展示为准。<br>本网站仅供个人研究，不构成投资建议。</div>
 </main>
 <script>
 const N={sp500:'标普500',dividend:'中证红利低波 H30269',nasdaq:'纳斯达克100',consumer:'中证主要消费 000932'};
